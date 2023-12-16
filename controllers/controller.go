@@ -1,50 +1,107 @@
 package controllers
 
 import (
-	"context"
-	"fmt"
-	"log"
-
-	"github.com/Crud-Mongodb/database"
-	"github.com/Crud-Mongodb/model"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	helper "github.com/Crud-Mongodb/helpers"
+	models "github.com/Crud-Mongodb/model"
+	"github.com/gin-gonic/gin"
 )
 
-func insertMovie(movie model.Netfilx) {
-	insert, err := database.Collection.InsertOne(context.Background(), movie)
-	if err != nil {
-		log.Fatal("Failed to insert movie : ", err)
+func AddMovie(c *gin.Context) {
+	var movie models.Movie
+	if err := c.Bind(&movie); err != nil {
+		c.JSON(500, gin.H{
+			"error": "Binding error",
+		})
+		return
 	}
-	fmt.Println("Inserted one movei in database with id : ", insert.InsertedID)
+	res,err := helper.InsertMovie(movie)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": err,
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"message": "successfully inserted movie",
+		"id":      res,
+	})
 }
 
-// update a record
-func updatemovie(Id string) {
-	movieId, _ := primitive.ObjectIDFromHex(Id)
-	filter := bson.M{"_id": movieId}
-	update := bson.M{"$set": bson.M{"watched": true}}
-	result, err := database.Collection.UpdateOne(context.Background(), filter, update)
+func ViewAllMovies(c *gin.Context) {
+	list, err := helper.ListAllMovies()
+
 	if err != nil {
-		log.Fatal("failed to update movie : ", err)
+		c.JSON(400, gin.H{
+			"error": err,
+		})
+		return
 	}
-	fmt.Println("Successfully updated movie \n modified count : ", result.ModifiedCount)
+	c.JSON(200, gin.H{
+		"movies": list,
+	})
 }
 
-// delete one record from DB
-func deletemovie(Id string) {
-	movieId, _ := primitive.ObjectIDFromHex(Id)
-	filter := bson.M{"_id": movieId}
-	deletecount, _ := database.Collection.DeleteOne(context.Background(), filter)
-	fmt.Println("Movie successfully deleted with delete count : ", deletecount)
+func UpdateMovie(c *gin.Context) {
+	id := c.Param("id")
+	var movie models.Movie
+	if err := c.Bind(&movie); err != nil {
+		c.JSON(500, gin.H{
+			"error": "binding error",
+		})
+		return
+	}
+	count, err := helper.UpdateMovie(movie, id)
+
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": err,
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"message": "successfully updated",
+		"count":   count,
+	})
+
 }
 
-// delte multiple record from the database
-func deleteMany(Id string) int64{
-	result, err := database.Collection.DeleteMany(context.Background(), bson.D{{}}, nil)
+func GetOneMovie(c *gin.Context) {
+	id := c.Param("id")
+	movie, err := helper.GetOneMovie(id)
 	if err != nil {
-		log.Fatal("Failed to dalate all records from the Db : ", err)
+		c.JSON(400, gin.H{
+			"error": err,
+		})
+		return
 	}
-	fmt.Println("Succeffully deleted all records with delet count : ", result.DeletedCount)
-	return result.DeletedCount
+	c.JSON(200, gin.H{
+		"movie": movie,
+	})
+}
+
+func DeleteOneMovie(c *gin.Context) {
+	id := c.Param("id")
+	err := helper.DeleteOneMovie(id)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": err,
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"message": "successfully deleted " + id + " movie",
+	})
+}
+
+func DeleteAllMovies(c *gin.Context) {
+	err := helper.DeleteAllMovie()
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": err,
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"message": "successfully deleted all data",
+	})
 }

@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var Collection *mongo.Collection
+var Collections *mongo.Collection
 
 func ConnectToDb() {
 	const uri = "mongodb//:localhost:27017"
@@ -18,5 +18,5 @@ func ConnectToDb() {
 		log.Fatal(err)
 	}
 
-	Collection = client.Database("mongo-crud").Collection("movies")
+	Collections = client.Database("mongo-crud").Collection("movies")
 }
